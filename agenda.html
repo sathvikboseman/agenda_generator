@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emailer Generator</title>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --teal:#2b948d;
+      --navy:#343d53;
+      --text:#1f4f4b;
+      --footer-text:#1e7f78;
+      --bg:#ffffff;
+      --border:#d7dfdd;
+      --danger:#c0392b;
+      --panel-bg:#f8fbfa;
+
+      --hero-box-title-size:24px;
+      --body-title-size:24px;
+      --intro-size:13px;
+      --meta-size:11px;
+      --agenda-title-size:21px;
+      --agenda-head-size:13px;
+      --agenda-cell-size:9px;
+      --speaker-size:7px;
+      --speaker-small-size:6px;
+      --footer-size:6px;
+      --copyright-size:7px;
+
+      --hero-title-color:#ffffff;
+      --body-title-color:#2b948d;
+      --intro-color:#2b948d;
+      --meta-color:#2b948d;
+      --agenda-title-color:#2b948d;
+      --agenda-head-color:#ffffff;
+      --agenda-cell-color:#ffffff;
+      --speaker-color:#ffffff;
+      --speaker-small-color:#ffffff;
+      --footer-color:#1e7f78;
+      --copyright-color:#ffffff;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Invention",Arial,sans-serif;
+      background:#e9efed;
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width:1920px;
+      margin:0 auto;
+      padding:18px;
+      display:grid;
+      grid-template-columns:560px 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel,.preview{
+      background:#fff;
+      border:1px solid rgba(52,61,83,0.08);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 12px 30px rgba(0,0,0,0.06);
+    }
+
+    .panel-header{
+      background:linear-gradient(90deg,var(--teal),#3aa59e);
+      color:#fff;
+      padding:16px 18px;
+      font-weight:800;
+      font-size:18px;
+    }
+
+    .panel-body{
+      padding:18px;
+      background:var(--panel-bg);
+    }
+
+    .group{
+      background:#fff;
+      border:1px solid rgba(52,61,83,0.08);
+      border-radius:14px;
+      padding:14px;
+      margin-bottom:14px;
+    }
+
+    .group-title{
+      margin:0 0 10px;
+      font-size:12px;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      color:#44635f;
+      font-weight:800;
+    }
+
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      margin:0 0 6px;
+      color:var(--teal);
+    }
+
+    input,textarea,button,select{
+      width:100%;
+      font-family:inherit;
+      font-size:14px;
+    }
+
+    input,textarea,select{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin-bottom:12px;
+      outline:none;
+      background:#fff;
+    }
+
+    input:focus,textarea:focus,select:focus{
+      border-color:rgba(43,148,141,0.55);
+      box-shadow:0 0 0 3px rgba(43,148,141,0.12);
+    }
+
+    textarea{
+      min-height:170px;
+      resize:vertical;
+      line-height:1.45;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .color-box{
+      background:#fff;
+      border:1px solid rgba(52,61,83,0.08);
+      border-radius:12px;
+      padding:10px;
+    }
+
+    .color-tools{
+      display:grid;
+      grid-template-columns:18px 1fr 44px;
+      gap:8px;
+      align-items:center;
+    }
+
+    .color-preview{
+      width:18px;
+      height:18px;
+      border-radius:4px;
+      border:1px solid #bfc8c5;
+      background:#fff;
+      flex:0 0 auto;
+    }
+
+    .color-swatch{
+      width:44px;
+      height:40px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#fff;
+      padding:0;
+      cursor:pointer;
+    }
+
+    .slider-row{
+      background:#fff;
+      border:1px solid rgba(52,61,83,0.08);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:10px;
+    }
+
+    .slider-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:6px;
+    }
+
+    .slider-top label{
+      margin:0;
+      font-size:12px;
+      color:#44635f;
+      font-weight:700;
+    }
+
+    .slider-value{
+      font-size:12px;
+      font-weight:800;
+      color:#2d4b49;
+      min-width:42px;
+      text-align:right;
+    }
+
+    input[type="range"]{
+      margin:0;
+      padding:0;
+      accent-color:var(--teal);
+    }
+
+    .slider-color-row{
+      display:grid;
+      grid-template-columns:18px 1fr 44px;
+      gap:8px;
+      align-items:center;
+      margin-top:8px;
+    }
+
+    .slider-color-row input[type="text"]{
+      margin-bottom:0;
+      padding:6px 10px;
+      font-size:12px;
+    }
+
+    .btn-row{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    .btn-row-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    button{
+      border:none;
+      border-radius:10px;
+      background:var(--teal);
+      color:#fff;
+      padding:12px 14px;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .12s,filter .12s;
+    }
+
+    button:hover{filter:brightness(0.95)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:var(--navy)}
+    button.ghost{background:#5f7c79}
+
+    .hint{font-size:12px;color:#5f7b78;margin:0;line-height:1.45}
+
+    .format-box{
+      margin-bottom:14px;
+      padding:10px;
+      background:#eef5f3;
+      border:1px solid rgba(52,61,83,0.08);
+      border-radius:10px;
+      color:#46635f;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .format-box code{display:block;margin-top:6px;white-space:pre-wrap}
+
+    .status{margin-top:8px;color:#46635f;font-size:12px;line-height:1.45}
+    .status.error{color:var(--danger);font-weight:700}
+
+    .logo-preview-wrap{
+      margin-top:10px;
+      background:#2b948d;
+      border-radius:10px;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:52px;
+    }
+
+    .logo-preview-wrap img{
+      max-width:160px;
+      max-height:50px;
+      object-fit:contain;
+      display:block;
+    }
+
+    .logo-preview-wrap span{
+      font-size:12px;
+      color:rgba(255,255,255,0.7);
+      font-style:italic;
+    }
+
+    .preview{
+      padding:0;
+      overflow:auto;
+      background:#f7faf9;
+      position:sticky;
+      top:18px;
+    }
+
+    .preview-inner{display:flex;justify-content:center;padding:18px}
+
+    .page{
+      width:600px;
+      background:var(--bg);
+      overflow:hidden;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .hero{
+      background:var(--teal);
+      color:#fff;
+      padding:16px 16px 22px;
+    }
+
+    .logo-strip{
+      margin:0 -16px;
+      padding:0 16px;
+      width:calc(100% + 32px);
+    }
+
+    .logo-row{
+      display:flex;
+      align-items:center;
+      margin:0;
+      padding:0;
+      width:100%;
+    }
+
+    .logo-row.left{justify-content:flex-start}
+    .logo-row.center{justify-content:center}
+    .logo-row.right{justify-content:flex-end}
+
+    .msd-logo{display:block;height:auto;object-fit:contain;}
+
+    .hero-title-wrap{
+      padding:18px 0 0;
+    }
+
+    .hero-title-wrap h1{
+      margin:0;
+      font-size:var(--hero-box-title-size);
+      line-height:1.12;
+      font-weight:700;
+      width:95%;
+      letter-spacing:-0.1px;
+      color:var(--hero-title-color);
+    }
+
+    .content{padding:12px 16px 0}
+
+    .intro{
+      color:var(--intro-color);
+      font-size:var(--intro-size);
+      line-height:1.12;
+      margin-bottom:8px;
+    }
+
+    .intro .indent{
+      display:block;
+      padding-left:10px;
+      font-size:var(--intro-size);
+      margin-top:1px;
+      color:var(--intro-color);
+    }
+
+    .title-center{
+      text-align:center;
+      color:var(--body-title-color);
+      font-size:var(--body-title-size);
+      line-height:1.06;
+      font-weight:700;
+      margin:6px auto 12px;
+      max-width:540px;
+    }
+
+    .meta-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin:0 4px 4px;
+    }
+
+    .meta-item{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      color:var(--meta-color);
+      font-size:var(--meta-size);
+      line-height:1.1;
+      min-height:40px;
+    }
+
+    .icon{
+      width:27px;
+      height:27px;
+      flex:0 0 27px;
+      stroke:var(--meta-color);
+      fill:none;
+      stroke-width:2.2;
+      margin-top:0;
+    }
+
+    .meta-text{padding-top:0;text-align:center}
+
+    .register-note{text-align:center;color:var(--teal);font-size:11px;font-weight:700;margin:3px 0 5px}
+
+    .btn-link{
+      display:block;width:170px;margin:0 auto;background:var(--teal);
+      color:#fff;text-align:center;padding:10px 14px;border-radius:10px;
+      font-size:15px;font-weight:700;line-height:1;text-decoration:none;
+    }
+
+    .agenda-title{
+      text-align:center;color:var(--agenda-title-color);
+      font-size:var(--agenda-title-size);font-weight:700;margin:10px 0 5px;letter-spacing:0.2px;
+    }
+
+    .rule,.rule2{width:82%;height:3px;background:var(--teal);margin:0 auto 10px}
+
+    .agenda{width:88%;margin:0 auto;border-collapse:separate;border-spacing:2px;table-layout:fixed}
+
+    .agenda thead th{
+      background:var(--navy);color:var(--agenda-head-color);
+      font-size:var(--agenda-head-size);line-height:1;padding:4px 5px;font-weight:700;text-align:center;
+    }
+
+    .agenda td{
+      background:var(--teal);color:var(--agenda-cell-color);
+      text-align:center;padding:7px 6px;font-size:var(--agenda-cell-size);
+      line-height:1.12;vertical-align:middle;height:52px;
+    }
+
+    .agenda td.topic{background:var(--navy);font-size:var(--agenda-cell-size);font-weight:700}
+
+    .agenda td.speaker{
+      text-align:left;padding:6px;font-size:var(--speaker-size);
+      line-height:1.05;font-weight:700;color:var(--speaker-color);
+    }
+
+    .agenda td.speaker small{
+      display:block;font-size:var(--speaker-small-size);
+      font-weight:400;line-height:1.04;margin-top:1px;color:var(--speaker-small-color);
+    }
+
+    .timing-note{text-align:center;color:var(--teal);font-size:8px;margin:5px 0 4px}
+    .footer-register{text-align:center;color:var(--teal);font-size:11px;font-weight:700;margin:1px 0 5px}
+
+    .btn2{
+      display:block;width:170px;margin:0 auto 6px;background:var(--teal);
+      color:#fff;text-align:center;padding:10px 14px;border-radius:10px;
+      font-size:15px;font-weight:700;line-height:1;text-decoration:none;
+    }
+
+    .contact{
+      width:90%;margin:0 auto 5px;background:var(--teal);color:#fff;
+      border-radius:10px;text-align:center;padding:7px 10px;font-size:9px;line-height:1.1;
+    }
+
+    .legal{width:86%;margin:5px auto 0;color:var(--footer-color);font-size:var(--footer-size);line-height:1.12;text-align:center}
+    .privacy-link{text-align:center;color:var(--footer-color);font-weight:700;font-size:9px;margin:7px 0 7px}
+
+    .bottom-band{background:var(--teal);color:#fff;padding:7px 10px;display:flex;align-items:center;gap:8px}
+    .bottom-logo{height:auto;display:block;flex:0 0 auto;margin-top:0}
+    .bottom-text{font-size:var(--copyright-size);line-height:1.08;flex:1}
+    .copyright-line{font-size:var(--copyright-size);color:var(--copyright-color)}
+
+    @media (max-width:980px){.wrap{grid-template-columns:1fr}.page{width:600px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="panel">
+    <div class="panel-header">Agenda Generator</div>
+    <div class="panel-body">
+
+      <div class="group">
+        <div class="group-title">Content</div>
+        <label for="title">Title</label>
+        <input id="title" value="Advancing healthcare workers' knowledge on HPV Vaccination" />
+        <label for="intro">Intro line</label>
+        <input id="intro" value="MSD cordially invites you to a meeting entitled:" />
+        <div class="two-col">
+          <div><label for="date">Date</label><input id="date" value="30th April 2026" /></div>
+          <div><label for="day">Day</label><input id="day" value="Thursday" /></div>
+        </div>
+        <div class="two-col">
+          <div><label for="time">Time</label><input id="time" value="8:30am (UTC+4)" /></div>
+          <div><label for="venue">Venue</label><input id="venue" value="Radisson Blu Hotel Sohar" /></div>
+        </div>
+        <label for="inviteLink">Invite Link</label>
+        <input id="inviteLink" type="text" value="https://example.com" placeholder="Paste invite URL here" />
+      </div>
+
+      <div class="group">
+        <div class="group-title">Job Code &amp; Expiry</div>
+        <div class="two-col">
+          <div>
+            <label for="jobCode">Job Code</label>
+            <input id="jobCode" type="text" value="OM-GSL-00057" placeholder="e.g. OM-GSL-00057" />
+          </div>
+          <div>
+            <label for="expiryDate">Expiry Date</label>
+            <input id="expiryDate" type="text" value="01-06-2026" placeholder="e.g. 01-06-2026" />
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Logo</div>
+        <label for="logoUpload">Upload logo (PNG, JPG, SVG)</label>
+        <input id="logoUpload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/gif,image/webp" />
+        <div class="logo-preview-wrap" id="logoPreviewWrap">
+          <span>No logo uploaded — using default</span>
+        </div>
+        <div class="slider-row" style="margin-top:10px;">
+          <div class="slider-top">
+            <label for="logoWidth">Header logo width</label>
+            <span class="slider-value" id="logoWidthVal">110px</span>
+          </div>
+          <input id="logoWidth" type="range" min="40" max="240" value="110" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-top">
+            <label for="footerLogoWidth">Footer logo width</label>
+            <span class="slider-value" id="footerLogoWidthVal">76px</span>
+          </div>
+          <input id="footerLogoWidth" type="range" min="30" max="160" value="76" />
+        </div>
+        <div class="btn-row-2" style="margin-top:4px;">
+          <button class="ghost" id="resetLogoBtn">Reset to Default</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Header Logo Alignment</div>
+        <label for="logoAlign">Align logo in green box</label>
+        <select id="logoAlign">
+          <option value="left">Left</option>
+          <option value="center" selected>Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Theme Colors</div>
+        <div class="two-col">
+          <div class="color-box">
+            <label for="tealColor">Teal / cell color</label>
+            <div class="color-tools">
+              <span class="color-preview" id="tealPreview"></span>
+              <input id="tealColor" type="text" value="#2b948d" maxlength="7" placeholder="#2b948d" />
+              <input id="tealPicker" type="color" value="#2b948d" class="color-swatch" />
+            </div>
+          </div>
+          <div class="color-box">
+            <label for="navyColor">Navy / topic header</label>
+            <div class="color-tools">
+              <span class="color-preview" id="navyPreview"></span>
+              <input id="navyColor" type="text" value="#343d53" maxlength="7" placeholder="#343d53" />
+              <input id="navyPicker" type="color" value="#343d53" class="color-swatch" />
+            </div>
+          </div>
+        </div>
+        <div class="two-col" style="margin-top:10px;">
+          <div class="color-box">
+            <label for="footerColor">Footer text color</label>
+            <div class="color-tools">
+              <span class="color-preview" id="footerPreview"></span>
+              <input id="footerColor" type="text" value="#1e7f78" maxlength="7" placeholder="#1e7f78" />
+              <input id="footerPicker" type="color" value="#1e7f78" class="color-swatch" />
+            </div>
+          </div>
+          <div class="color-box">
+            <label for="bgColor">Page background</label>
+            <div class="color-tools">
+              <span class="color-preview" id="bgPreview"></span>
+              <input id="bgColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+              <input id="bgPicker" type="color" value="#ffffff" class="color-swatch" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Typography</div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Green box title</label><span class="slider-value" id="heroBoxTitleSizeVal"></span></div>
+          <input id="heroBoxTitleSize" type="range" min="16" max="36" value="24" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="heroTitleColorPreview"></span>
+            <input id="heroTitleColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="heroTitlePicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Body title</label><span class="slider-value" id="bodyTitleSizeVal"></span></div>
+          <input id="bodyTitleSize" type="range" min="16" max="36" value="24" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="bodyTitleColorPreview"></span>
+            <input id="bodyTitleColor" type="text" value="#2b948d" maxlength="7" placeholder="#2b948d" />
+            <input id="bodyTitlePicker" type="color" value="#2b948d" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Intro text</label><span class="slider-value" id="introSizeVal"></span></div>
+          <input id="introSize" type="range" min="9" max="18" value="13" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="introColorPreview"></span>
+            <input id="introColor" type="text" value="#2b948d" maxlength="7" placeholder="#2b948d" />
+            <input id="introPicker" type="color" value="#2b948d" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Date / Day / Time / Venue</label><span class="slider-value" id="metaSizeVal"></span></div>
+          <input id="metaSize" type="range" min="8" max="16" value="11" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="metaColorPreview"></span>
+            <input id="metaColor" type="text" value="#2b948d" maxlength="7" placeholder="#2b948d" />
+            <input id="metaPicker" type="color" value="#2b948d" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Agenda title</label><span class="slider-value" id="agendaTitleSizeVal"></span></div>
+          <input id="agendaTitleSize" type="range" min="14" max="28" value="21" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="agendaTitleColorPreview"></span>
+            <input id="agendaTitleColor" type="text" value="#2b948d" maxlength="7" placeholder="#2b948d" />
+            <input id="agendaTitlePicker" type="color" value="#2b948d" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Agenda header row</label><span class="slider-value" id="agendaHeadSizeVal"></span></div>
+          <input id="agendaHeadSize" type="range" min="9" max="18" value="13" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="agendaHeadColorPreview"></span>
+            <input id="agendaHeadColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="agendaHeadPicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Agenda cell text</label><span class="slider-value" id="agendaCellSizeVal"></span></div>
+          <input id="agendaCellSize" type="range" min="6" max="14" value="9" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="agendaCellColorPreview"></span>
+            <input id="agendaCellColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="agendaCellPicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Speaker text</label><span class="slider-value" id="speakerSizeVal"></span></div>
+          <input id="speakerSize" type="range" min="5" max="12" value="7" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="speakerColorPreview"></span>
+            <input id="speakerColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="speakerPicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Speaker small text</label><span class="slider-value" id="speakerSmallSizeVal"></span></div>
+          <input id="speakerSmallSize" type="range" min="4" max="10" value="6" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="speakerSmallColorPreview"></span>
+            <input id="speakerSmallColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="speakerSmallPicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Footer legal text</label><span class="slider-value" id="footerSizeVal"></span></div>
+          <input id="footerSize" type="range" min="5" max="12" value="6" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="footerTextColorPreview"></span>
+            <input id="footerTextColor" type="text" value="#1e7f78" maxlength="7" placeholder="#1e7f78" />
+            <input id="footerTextPicker" type="color" value="#1e7f78" class="color-swatch" />
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-top"><label>Copyright line</label><span class="slider-value" id="copyrightSizeVal"></span></div>
+          <input id="copyrightSize" type="range" min="5" max="12" value="7" />
+          <div class="slider-color-row">
+            <span class="color-preview" id="copyrightColorPreview"></span>
+            <input id="copyrightColor" type="text" value="#ffffff" maxlength="7" placeholder="#ffffff" />
+            <input id="copyrightPicker" type="color" value="#ffffff" class="color-swatch" />
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Source File</div>
+        <label for="rawUpload">Upload raw agenda (.txt, .docx, .csv, .xlsx)</label>
+        <input id="rawUpload" type="file" accept=".txt,.docx,.csv,.md,.xlsx,.xls,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+        <div class="status" id="rawStatus">Upload raw agenda, then convert to pipeline format.</div>
+        <div class="btn-row-2">
+          <button id="convertBtn">Convert Raw Agenda</button>
+          <button class="secondary" id="autoBtn">Auto Convert Now</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Agenda Data</div>
+        <label for="pipelineData">Pipeline rows</label>
+        <textarea id="pipelineData">8:30AM-9:00AM | Opening & Introduction
+9:00AM-9:45AM | Recent updates on HPV Disease Burden | Speaker: Dr. Hanan Alkindi | Director General of Disease Surveillance and Control | Oman MOH
+9:45AM-10:30AM | Comprehensive Overview of the HPV Vaccine: Efficacy and Safety | Speaker: Dr. Bader Alrawahi | Director of Communicable Diseases | Oman MOH
+10:30AM-11:00AM | Break
+11:00AM-11:45AM | Healthcare workers' role in HPV Prevention through Stakeholder Engagement | Speaker: Dr. Noura Alfarsi | Head of Immunization & VPDs | Oman MOH
+11:45AM-12:30PM | Effective communication skills to address vaccines hesitancy | Speaker: Dr. Aagje Bais | Consultant Gynecologist, | Mediclinic Arabian Ranches, | Dubai, UAE
+12:30PM-1:30PM | Discussion
+1:30PM | Lunch</textarea>
+        <p class="hint">DOCX tables will be extracted row-by-row if possible.</p>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Output</div>
+        <div class="format-box">
+          <strong>Expected format:</strong>
+          <code>time | topic | speaker line 1 | speaker line 2 | speaker line 3</code>
+        </div>
+        <div class="btn-row">
+          <button onclick="generatePreview()">Generate Preview</button>
+          <button class="secondary" onclick="downloadHTML()">Download HTML</button>
+          <button class="ghost" onclick="copyHTML()">Copy HTML</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="preview-inner">
+      <div class="page" id="preview"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  let rawAgendaText = "";
+  let logoDataURL = "MSD%20White.png";
+  let logoIsCustom = false;
+
+  function esc(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
+  function isValidHex(h){ return /^#[0-9A-Fa-f]{6}$/.test(String(h||"").trim()); }
+  function normalizeHex(h,fb){ return isValidHex(h)?String(h).trim().toLowerCase():fb; }
+  function updateSwatch(id,v){ const el=document.getElementById(id); if(el) el.style.background=v; }
+
+  function updateLogoPreview(){
+    const wrap=document.getElementById("logoPreviewWrap");
+    wrap.innerHTML="";
+    if(logoIsCustom){
+      const img=document.createElement("img");
+      img.src=logoDataURL; img.alt="Logo preview";
+      wrap.appendChild(img);
+    } else {
+      const span=document.createElement("span");
+      span.textContent="No logo uploaded — using default";
+      wrap.appendChild(span);
+    }
+  }
+
+  async function trimLogoImage(dataURL){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.onload=()=>{
+        const width=img.naturalWidth;
+        const height=img.naturalHeight;
+        const canvas=document.createElement("canvas");
+        canvas.width=width;
+        canvas.height=height;
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0);
+        const imageData=ctx.getImageData(0,0,width,height);
+        const data=imageData.data;
+        const bgR=data[0];
+        const bgG=data[1];
+        const bgB=data[2];
+        const bgA=data[3];
+        const tol=32;
+        function isBackground(r,g,b,a){
+          if(a <= 16) return true;
+          const dr=Math.abs(r-bgR), dg=Math.abs(g-bgG), db=Math.abs(b-bgB);
+          return dr <= tol && dg <= tol && db <= tol;
+        }
+        let minX=width, minY=height, maxX=0, maxY=0;
+        for(let y=0;y<height;y++){
+          for(let x=0;x<width;x++){
+            const idx=(y*width+x)*4;
+            const r=data[idx], g=data[idx+1], b=data[idx+2], a=data[idx+3];
+            if(!isBackground(r,g,b,a)){
+              minX=Math.min(minX,x);
+              minY=Math.min(minY,y);
+              maxX=Math.max(maxX,x);
+              maxY=Math.max(maxY,y);
+            }
+          }
+        }
+        if(maxX < minX || maxY < minY){
+          resolve(dataURL);
+          return;
+        }
+        const trimWidth=maxX-minX+1;
+        const trimHeight=maxY-minY+1;
+        const outCanvas=document.createElement("canvas");
+        outCanvas.width=trimWidth;
+        outCanvas.height=trimHeight;
+        outCanvas.getContext("2d").drawImage(canvas,minX,minY,trimWidth,trimHeight,0,0,trimWidth,trimHeight);
+        resolve(outCanvas.toDataURL("image/png"));
+      };
+      img.onerror=reject;
+      img.src=dataURL;
+    });
+  }
+
+  function bindHexControl(textId,pickerId,previewId,fallback,cssVar){
+    const tx=document.getElementById(textId);
+    const pk=document.getElementById(pickerId);
+    if(!tx||!pk){ console.warn("Missing:",textId,pickerId); return; }
+
+    function sanitize(v){
+      v=String(v||"").replace(/[^#0-9a-fA-F]/g,"");
+      if(v.indexOf("#")>0) v="#"+v.replace(/#/g,"");
+      return v.slice(0,7);
+    }
+
+    function commit(v){
+      const norm=normalizeHex(v,null);
+      if(norm){
+        tx.value=norm; pk.value=norm;
+        updateSwatch(previewId,norm);
+        document.documentElement.style.setProperty(cssVar,norm);
+        generatePreview();
+      }
+    }
+
+    tx.addEventListener("input",()=>{ tx.value=sanitize(tx.value); if(isValidHex(tx.value)) commit(tx.value); });
+    tx.addEventListener("blur",()=>{ if(isValidHex(tx.value.trim())) commit(tx.value.trim()); else commit(fallback); });
+    pk.addEventListener("input",()=>commit(pk.value));
+
+    tx.value=fallback; pk.value=fallback;
+    updateSwatch(previewId,fallback);
+    document.documentElement.style.setProperty(cssVar,fallback);
+  }
+
+  function bindSlider(id,cssVar){
+    const el=document.getElementById(id);
+    const vl=document.getElementById(id+"Val");
+    if(!el){ console.warn("Missing slider:",id); return; }
+    function update(){
+      const v=el.value+"px";
+      document.documentElement.style.setProperty(cssVar,v);
+      if(vl) vl.textContent=v;
+      generatePreview();
+    }
+    el.addEventListener("input",update);
+    update();
+  }
+
+  function bindLogoSlider(id,valId){
+    const el=document.getElementById(id);
+    const vl=document.getElementById(valId);
+    if(!el) return;
+    function update(){ if(vl) vl.textContent=el.value+"px"; generatePreview(); }
+    el.addEventListener("input",update);
+    update();
+  }
+
+  function renderSpeaker(parts){
+    if(!parts.length||!parts[0].trim()) return "";
+    const first=esc(parts[0].trim());
+    const rest=parts.slice(1).map(p=>esc(p.trim())).filter(Boolean).join("<br>");
+    return rest?`${first}<small>${rest}</small>`:first;
+  }
+
+  function parseAgenda(text){
+    return text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(line=>{
+      const cols=line.split("|").map(c=>c.trim());
+      return {time:cols[0]||"",topic:cols[1]||"",speaker:renderSpeaker(cols.slice(2))};
+    });
+  }
+
+  function timeLineMatch(line){
+    return line.match(/^(\d{1,2}:\d{2}\s*[APap][Mm](?:\s*[-–—]\s*\d{1,2}:\d{2}\s*[APap][Mm])?)\s*(.*)$/);
+  }
+
+  function looksLikeSpeakerLine(line){
+    return /^(Speaker:|Dr\.|Prof\.|Mr\.|Ms\.)/i.test(line)||/(MOH|Hospital|Clinic|Consultant|Director|Head of|Dubai|Oman|Gynecologist|Surveillance|Communicable)/i.test(line);
+  }
+
+  function splitAgendaByTimes(text){
+    const timeRangeRE=/\b\d{1,2}:\d{2}\s*[APap][Mm](?:\s*[-–—]\s*\d{1,2}:\d{2}\s*[APap][Mm])?/g;
+    const segments=[];
+    let match;
+    let currentStart=-1;
+    while((match=timeRangeRE.exec(text))!==null){
+      if(currentStart !== -1){
+        segments.push(text.slice(currentStart, match.index).trim());
+      }
+      currentStart = match.index;
+    }
+    if(currentStart === -1) return text;
+    segments.push(text.slice(currentStart).trim());
+    return segments.filter(Boolean).join("\n");
+  }
+
+  function insertTimeLineBreaks(text){
+    return splitAgendaByTimes(text);
+  }
+
+  function convertRawToFormatted(raw){
+    raw = insertTimeLineBreaks(raw);
+    const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const out=[]; let cur=null;
+    function flush(){ if(!cur) return; out.push([cur.time,cur.topic,...cur.sp].filter(Boolean).join(" | ")); cur=null; }
+    for(const line of lines){
+      const tm=timeLineMatch(line);
+      if(tm){
+        flush();
+        const time=tm[1].replace(/\s+/g,"").replace(/\s*[-–—]\s*/g,"-");
+        const rest=(tm[2]||"").trim();
+        cur={time,topic:"",sp:[]};
+        if(rest){
+          const ss=rest.split(/\bSpeaker:\s*/i);
+          if(ss.length>1){ cur.topic=ss[0].replace(/^[\-\–—:|]\s*/g,"").trim(); cur.sp.push("Speaker: "+ss.slice(1).join("Speaker:").trim()); }
+          else cur.topic=rest.replace(/^[\-\–—:|]\s*/g,"").trim();
+        }
+        continue;
+      }
+      if(!cur) continue;
+      if(!cur.topic){ cur.topic=line; continue; }
+      if(looksLikeSpeakerLine(line)) cur.sp.push(line);
+      else cur.topic+=" "+line;
+    }
+    flush();
+    return out.join("\n");
+  }
+
+  function extractTableLikeRowsFromPlainText(text){
+    const normalized=insertTimeLineBreaks(text);
+    const lines=normalized.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const rows=[]; let buf=[];
+    for(const line of lines){
+      if(timeLineMatch(line)&&buf.length){ rows.push(buf.join("\n")); buf=[line]; }
+      else buf.push(line);
+    }
+    if(buf.length) rows.push(buf.join("\n"));
+    return rows.join("\n");
+  }
+
+  function gv(id){ const el=document.getElementById(id); return el?el.value.trim():""; }
+  function gs(id,def){ const el=document.getElementById(id); return el?el.value+"px":def; }
+  function gn(id,def){ const el=document.getElementById(id); return el?parseInt(el.value):def; }
+
+  function getData(){
+    const teal=normalizeHex(gv("tealColor"),"#2b948d");
+    const navy=normalizeHex(gv("navyColor"),"#343d53");
+    const footerColor=normalizeHex(gv("footerColor"),"#1e7f78");
+    const bgColor=normalizeHex(gv("bgColor"),"#ffffff");
+    const logoAlign = gv("logoAlign") || "center";
+    return {
+      title:gv("title"),intro:gv("intro"),date:gv("date"),day:gv("day"),
+      time:gv("time"),venue:gv("venue"),inviteLink:gv("inviteLink"),
+      jobCode:gv("jobCode"),expiryDate:gv("expiryDate"),
+      logoAlign,
+      teal,navy,footerColor,bgColor,
+      logoSrc:logoDataURL,
+      logoWidth:gn("logoWidth",110),
+      footerLogoWidth:gn("footerLogoWidth",76),
+      agenda:parseAgenda(gv("pipelineData")),
+      heroBoxTitleSize:gs("heroBoxTitleSize","24px"),
+      bodyTitleSize:gs("bodyTitleSize","24px"),
+      introSize:gs("introSize","13px"),
+      metaSize:gs("metaSize","11px"),
+      agendaTitleSize:gs("agendaTitleSize","21px"),
+      agendaHeadSize:gs("agendaHeadSize","13px"),
+      agendaCellSize:gs("agendaCellSize","9px"),
+      speakerSize:gs("speakerSize","7px"),
+      speakerSmallSize:gs("speakerSmallSize","6px"),
+      footerSize:gs("footerSize","6px"),
+      copyrightSize:gs("copyrightSize","7px"),
+      heroTitleColor:normalizeHex(gv("heroTitleColor"),"#ffffff"),
+      bodyTitleColor:normalizeHex(gv("bodyTitleColor"),"#2b948d"),
+      introColor:normalizeHex(gv("introColor"),"#2b948d"),
+      metaColor:normalizeHex(gv("metaColor"),"#2b948d"),
+      agendaTitleColor:normalizeHex(gv("agendaTitleColor"),"#2b948d"),
+      agendaHeadColor:normalizeHex(gv("agendaHeadColor"),"#ffffff"),
+      agendaCellColor:normalizeHex(gv("agendaCellColor"),"#ffffff"),
+      speakerColor:normalizeHex(gv("speakerColor"),"#ffffff"),
+      speakerSmallColor:normalizeHex(gv("speakerSmallColor"),"#ffffff"),
+      footerTextColor:normalizeHex(gv("footerTextColor"),"#1e7f78"),
+      copyrightColor:normalizeHex(gv("copyrightColor"),"#ffffff")
+    };
+  }
+
+  function buildBtnHTML(link,cls,label){
+    const href=link&&/^https?:\/\//i.test(link)?link:"#";
+    return `<a class="${cls}" href="${esc(href)}"${href!=="#"?' target="_blank" rel="noopener noreferrer"':""}>${esc(label)}</a>`;
+  }
+
+  function buildInnerHTML(data){
+    const topBtn=buildBtnHTML(data.inviteLink,"btn-link","Register Now");
+    const botBtn=buildBtnHTML(data.inviteLink,"btn2","Register Now");
+    const rows=data.agenda.map(item=>`<tr><td>${esc(item.time)}</td><td class="topic">${esc(item.topic)}</td><td class="speaker">${item.speaker}</td></tr>`).join("");
+    const logoSrc=data.logoSrc||"MSD%20White.png";
+    const logoW=data.logoWidth||110;
+    const footerLogoW=data.footerLogoWidth||76;
+    const jobCode=data.jobCode||"OM-GSL-00057";
+    const expiryDate=data.expiryDate||"01-06-2026";
+    const logoAlignClass = data.logoAlign === "left" ? "left" : data.logoAlign === "right" ? "right" : "center";
+    return `
+      <div class="hero">
+        <div class="logo-strip">
+          <div class="logo-row ${logoAlignClass}">
+            <img class="msd-logo" src="${logoSrc}" alt="Logo" style="width:${logoW}px;" />
+          </div>
+        </div>
+        <div class="hero-title-wrap">
+          <h1>${esc(data.title)}</h1>
+        </div>
+      </div>
+      <div class="content">
+        <div class="intro">Dear Doctor,<span class="indent">${esc(data.intro)}</span></div>
+        <div class="title-center">${esc(data.title)}</div>
+        <div class="meta-row">
+          <div class="meta-item"><svg class="icon" viewBox="0 0 48 48"><rect x="7" y="10" width="34" height="30" rx="2"/><line x1="7" y1="18" x2="41" y2="18"/><line x1="15" y1="6" x2="15" y2="14"/><line x1="33" y1="6" x2="33" y2="14"/></svg><div class="meta-text">${esc(data.date)}<br>(${esc(data.day)})</div></div>
+          <div class="meta-item"><svg class="icon" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18"/><line x1="24" y1="24" x2="24" y2="14"/><line x1="24" y1="24" x2="31" y2="24"/></svg><div class="meta-text">${esc(data.time)}</div></div>
+          <div class="meta-item"><svg class="icon" viewBox="0 0 48 48"><path d="M24 42s12-12.5 12-22a12 12 0 1 0-24 0c0 9.5 12 22 12 22z"/><circle cx="24" cy="20" r="4.5"/></svg><div class="meta-text">${esc(data.venue)}</div></div>
+        </div>
+        <div class="register-note">For online attendance, please register here:</div>${topBtn}
+        <div class="agenda-title">AGENDA</div><div class="rule"></div>
+        <table class="agenda"><thead><tr><th style="width:27%">Time</th><th style="width:38%">Topic</th><th style="width:35%">Speaker</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="timing-note">*All timings are based on Oman local time (UTC+4)</div><div class="rule2"></div>
+        <div class="footer-register">For online attendance, please register here:</div>${botBtn}<br>
+        <div class="contact">For Adverse Event, Product Quality or Medical Inquiry Contact<br><strong>DPOC.GULF@MSD.COM</strong></div>
+        <div class="legal">MSD is a signatory of the Middle East &amp; Africa code of pharmaceutical marketing practices which commits to sponsoring physicians only to scientific events, this invitation can't be extended to spouses or guests</div>
+        <div class="legal">*Your Privacy: By accepting this meeting request and/or joining this meeting, you consent to MSD processing your personal information for the purpose of organizing and holding this meeting in accordance with its HCP Privacy Notice, which is available at www.msdprivacy.com.</div>
+        <div class="legal">To know more about how we process your personal information, and to exercise your right to access, amend, correct or delete your Personal Information and withdraw your consent, please visit www.msdprivacy.com.</div>
+        <div class="legal">This email is only intended for the named recipient. Do not share or forward this email or any information or links included within.</div>
+        <div class="legal">You received this email because you have chosen to receive communications from MSD through registration with our services. If you no longer wish to receive any further emails from MSD, you can unsubscribe by clicking this link: <u>Unsubscribe here.</u></div>
+        <div class="privacy-link">Privacy Policy</div>
+      </div>
+      <div class="bottom-band"><img class="bottom-logo" src="${logoSrc}" alt="Logo" style="width:${footerLogoW}px;" /><div class="bottom-text"><span class="copyright-line">Copyright &copy; 2026 Merck &amp; Co., Inc., Rahway, NJ, USA and its affiliates. All rights reserved. ${esc(jobCode)} EXPIRY DATE: ${esc(expiryDate)}</span><br>To report an adverse event, product quality complaint and other reportable information or if you have a medical inquiry, you can contact: Tel: +97144269100 Fax: +97144269204 Email: DPOC.GULF@MSD.COM</div></div>
+    `;
+  }
+
+  function generatePreview(){
+    try{
+      const data=getData();
+      const pg=document.getElementById("preview");
+      pg.style.background=data.bgColor;
+      pg.innerHTML=buildInnerHTML(data);
+      const r=document.documentElement;
+      r.style.setProperty("--teal",data.teal);
+      r.style.setProperty("--navy",data.navy);
+      r.style.setProperty("--footer-text",data.footerColor);
+      r.style.setProperty("--bg",data.bgColor);
+      r.style.setProperty("--hero-box-title-size",data.heroBoxTitleSize);
+      r.style.setProperty("--body-title-size",data.bodyTitleSize);
+      r.style.setProperty("--intro-size",data.introSize);
+      r.style.setProperty("--meta-size",data.metaSize);
+      r.style.setProperty("--agenda-title-size",data.agendaTitleSize);
+      r.style.setProperty("--agenda-head-size",data.agendaHeadSize);
+      r.style.setProperty("--agenda-cell-size",data.agendaCellSize);
+      r.style.setProperty("--speaker-size",data.speakerSize);
+      r.style.setProperty("--speaker-small-size",data.speakerSmallSize);
+      r.style.setProperty("--footer-size",data.footerSize);
+      r.style.setProperty("--copyright-size",data.copyrightSize);
+      r.style.setProperty("--hero-title-color",data.heroTitleColor);
+      r.style.setProperty("--body-title-color",data.bodyTitleColor);
+      r.style.setProperty("--intro-color",data.introColor);
+      r.style.setProperty("--meta-color",data.metaColor);
+      r.style.setProperty("--agenda-title-color",data.agendaTitleColor);
+      r.style.setProperty("--agenda-head-color",data.agendaHeadColor);
+      r.style.setProperty("--agenda-cell-color",data.agendaCellColor);
+      r.style.setProperty("--speaker-color",data.speakerColor);
+      r.style.setProperty("--speaker-small-color",data.speakerSmallColor);
+      r.style.setProperty("--footer-color",data.footerTextColor);
+      r.style.setProperty("--copyright-color",data.copyrightColor);
+      updateSwatch("tealPreview",data.teal);
+      updateSwatch("navyPreview",data.navy);
+      updateSwatch("footerPreview",data.footerColor);
+      updateSwatch("bgPreview",data.bgColor);
+    } catch(e){ console.error("generatePreview error:",e); }
+  }
+
+  function buildFullHTML(data){
+    const logoSrc=data.logoSrc||"MSD%20White.png";
+    const logoW=data.logoWidth||110;
+    const footerLogoW=data.footerLogoWidth||76;
+    const jobCode=data.jobCode||"OM-GSL-00057";
+    const expiryDate=data.expiryDate||"01-06-2026";
+    const logoAlignClass = data.logoAlign === "left" ? "left" : data.logoAlign === "right" ? "right" : "center";
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${esc(data.title)}</title><style>*{box-sizing:border-box}body{margin:0;font-family:"Invention",Arial,sans-serif;background:${data.bgColor};color:#1f4f4b}.page{width:600px;margin:0 auto;background:${data.bgColor};overflow:hidden}.hero{background:${data.teal};color:#fff;padding:16px 16px 22px}.logo-strip{margin:0 -16px;padding:0 16px;width:calc(100% + 32px)}.logo-row{display:flex;align-items:center;margin:0;padding:0;width:100%}.logo-row.left{justify-content:flex-start}.logo-row.center{justify-content:center}.logo-row.right{justify-content:flex-end}.msd-logo{display:block;width:${logoW}px;height:auto;object-fit:contain}.hero-title-wrap{padding:18px 0 0}.hero-title-wrap h1{margin:0;font-size:${data.heroBoxTitleSize};line-height:1.12;font-weight:700;width:95%;letter-spacing:-0.1px;color:${data.heroTitleColor}}.content{padding:12px 16px 0}.intro{color:${data.introColor};font-size:${data.introSize};line-height:1.12;margin-bottom:8px}.intro .indent{display:block;padding-left:10px;font-size:${data.introSize};margin-top:1px;color:${data.introColor}}.title-center{text-align:center;color:${data.bodyTitleColor};font-size:${data.bodyTitleSize};line-height:1.06;font-weight:700;margin:6px auto 12px;max-width:540px}.meta-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 4px 4px}.meta-item{flex:1;display:flex;align-items:center;gap:7px;color:${data.metaColor};font-size:${data.metaSize};line-height:1.1;min-height:40px}.icon{width:27px;height:27px;flex:0 0 27px;stroke:${data.metaColor};fill:none;stroke-width:2.2;margin-top:0}.meta-text{padding-top:0;text-align:center}.register-note{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:3px 0 5px}.btn-link,.btn2{display:block;width:170px;margin:0 auto;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.agenda-title{text-align:center;color:${data.agendaTitleColor};font-size:${data.agendaTitleSize};font-weight:700;margin:10px 0 5px;letter-spacing:0.2px}.rule,.rule2{width:82%;height:3px;background:${data.teal};margin:0 auto 10px}.agenda{width:88%;margin:0 auto;border-collapse:separate;border-spacing:2px;table-layout:fixed}.agenda thead th{background:${data.navy};color:${data.agendaHeadColor};font-size:${data.agendaHeadSize};line-height:1;padding:4px 5px;font-weight:700;text-align:center}.agenda td{background:${data.teal};color:${data.agendaCellColor};text-align:center;padding:7px 6px;font-size:${data.agendaCellSize};line-height:1.12;vertical-align:middle;height:52px}.agenda td.topic{background:${data.navy};font-size:${data.agendaCellSize};font-weight:700}.agenda td.speaker{text-align:left;padding:6px;font-size:${data.speakerSize};line-height:1.05;font-weight:700;color:${data.speakerColor}}.agenda td.speaker small{display:block;font-size:${data.speakerSmallSize};font-weight:400;line-height:1.04;margin-top:1px;color:${data.speakerSmallColor}}.timing-note{text-align:center;color:${data.teal};font-size:8px;margin:5px 0 4px}.footer-register{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:1px 0 5px}.btn2{display:block;width:170px;margin:0 auto 6px;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.contact{width:90%;margin:0 auto 5px;background:${data.teal};color:#fff;border-radius:10px;text-align:center;padding:7px 10px;font-size:9px;line-height:1.1}.legal{width:86%;margin:5px auto 0;color:${data.footerTextColor};font-size:${data.footerSize};line-height:1.12;text-align:center}.privacy-link{text-align:center;color:${data.footerTextColor};font-weight:700;font-size:9px;margin:7px 0 7px}.bottom-band{background:${data.teal};color:#fff;padding:7px 10px;display:flex;align-items:flex-start;gap:8px}.bottom-logo{width:${footerLogoW}px;height:auto;display:block;flex:0 0 auto;margin-top:1px}.bottom-text{font-size:${data.copyrightSize};line-height:1.08;flex:1;padding-top:1px}.copyright-line{font-size:${data.copyrightSize};color:${data.copyrightColor}}</style></head><body><div class="page">${buildInnerHTML(data)}</div></body></html>`;
+  }
+
+  function downloadHTML(){
+    try{
+      const data=getData();
+      const blob=new Blob([buildFullHTML(data)],{type:"text/html"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download="emailer-template.html"; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e){ alert("Download failed: "+e.message); }
+  }
+
+  async function copyHTML(){
+    try{
+      const data=getData();
+      await navigator.clipboard.writeText(buildFullHTML(data));
+      alert("HTML copied to clipboard.");
+    } catch(e){ alert("Copy failed: "+e.message); }
+  }
+
+  async function parseExcelFile(file){
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: "array", cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const range = XLSX.utils.decode_range(ws["!ref"] || "A1:A1");
+    const merges = ws["!merges"] || [];
+
+    const getCellValue = (r,c) => {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      let cell = ws[addr];
+      if(!cell){
+        for(const merge of merges){
+          if(r >= merge.s.r && r <= merge.e.r && c >= merge.s.c && c <= merge.e.c){
+            cell = ws[XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c })];
+            break;
+          }
+        }
+      }
+      if(!cell) return "";
+      return cell.w !== undefined ? cell.w : cell.v;
+    };
+
+    const rows = [];
+    for(let r = range.s.r; r <= range.e.r; r++){
+      const row = [];
+      for(let c = range.s.c; c <= range.e.c; c++){
+        let value = getCellValue(r,c);
+        if(typeof value === "number" && value > 0 && value < 1){
+          const totalMinutes = Math.round(value * 24 * 60);
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          const ampm = hours >= 12 ? "PM" : "AM";
+          const h12 = ((hours + 11) % 12) + 1;
+          value = `${h12}:${String(minutes).padStart(2,"0")}${ampm}`;
+        }
+        row.push(String(value || "").trim());
+      }
+      const rowText = row.filter(Boolean).join(" | ");
+      if(rowText) rows.push(rowText);
+    }
+
+    if(rows.length){
+      const firstRowParts = rows[0].split(" | ").map(v => v.trim().toLowerCase());
+      const headers = new Set(firstRowParts);
+      const headerKeywords = ["time","topic","speaker","title","organisation","organization","duration"];
+      const matches = firstRowParts.filter(v => headerKeywords.includes(v)).length;
+      if((headers.has("time") && headers.has("topic")) || matches >= 2){
+        rows.shift();
+      }
+    }
+
+    return rows.join("\n");
+  }
+
+  async function loadRawAgendaFile(file){
+    const ext=file.name.split(".").pop().toLowerCase();
+    if(ext==="xlsx"||ext==="xls"){
+      try{
+        return await parseExcelFile(file);
+      } catch(e){ return ""; }
+    }
+    if(ext==="docx"){
+      const ab=await file.arrayBuffer();
+      try{
+        const hr=await mammoth.convertToHtml({arrayBuffer:ab});
+        const tmp=document.createElement("div"); tmp.innerHTML=hr.value;
+        const splitLines=text=>text.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
+        const splitGroups=text=>text.split(/\r?\n\s*\r?\n/).map(block=>splitLines(block)).filter(group=>group.length);
+        const distributeLines=(lines,count)=>{
+          const chunks=[];
+          if(!count||!lines.length) return lines.map(line=>[line]);
+          const base=Math.floor(lines.length/count);
+          let extra=lines.length%count;
+          let idx=0;
+          for(let i=0;i<count;i++){
+            const size=Math.max(1, base + (extra>0?1:0));
+            if(extra>0) extra--;
+            chunks.push(lines.slice(idx, idx+size));
+            idx += size;
+          }
+          return chunks;
+        };
+        const rows=[];
+        const toGroups=(lines,count)=>{
+          if(count>0 && lines.length===count) return lines.map(line=>[line]);
+          return distributeLines(lines,count);
+        };
+        for(const tr of tmp.querySelectorAll("table tr")){
+          const cells=[...tr.querySelectorAll("td,th")];
+          if(cells.length===2){
+            const leftLines=splitLines(cells[0].innerText);
+            const rightLines=splitLines(cells[1].innerText);
+            if(leftLines.length>1){
+              const groups=toGroups(rightLines,leftLines.length);
+              if(groups.length===leftLines.length){
+                leftLines.forEach((time,idx)=>{
+                  rows.push([time, ...groups[idx]].join(" | "));
+                });
+                continue;
+              }
+            }
+          }
+          if(cells.length===3){
+            const leftLines=splitLines(cells[0].innerText);
+            const middleLines=splitLines(cells[1].innerText);
+            const rightLines=splitLines(cells[2].innerText);
+            if(leftLines.length>1){
+              const middleGroups=toGroups(middleLines,leftLines.length);
+              const rightGroups=toGroups(rightLines,leftLines.length);
+              if(middleGroups.length===leftLines.length && rightGroups.length===leftLines.length){
+                leftLines.forEach((time,idx)=>{
+                  rows.push([time, middleGroups[idx].join(" "), rightGroups[idx].join(" ")].filter(Boolean).join(" | "));
+                });
+                continue;
+              }
+            }
+          }
+          const rowText=[...cells].map(td=>splitLines(td.innerText).join(" ")).filter(Boolean).join(" | ");
+          if(rowText) rows.push(rowText);
+        }
+        if(rows.length) return rows.join("\n");
+        const htmlText=tmp.innerText.trim();
+        if(htmlText) return htmlText;
+      } catch(e){}
+      try{ const r=await mammoth.extractRawText({arrayBuffer:ab}); if(r.value&&r.value.trim()) return r.value; } catch(e){}
+      return "";
+    }
+    return await file.text();
+  }
+
+  function setRawAgendaAndConvert(raw){
+    rawAgendaText=raw||"";
+    const prelim=rawAgendaText.includes("|")?rawAgendaText:extractTableLikeRowsFromPlainText(rawAgendaText);
+    document.getElementById("pipelineData").value=convertRawToFormatted(prelim);
+    document.getElementById("rawStatus").textContent="Raw agenda converted into pipeline format.";
+    document.getElementById("rawStatus").className="status";
+    generatePreview();
+  }
+
+  function init(){
+    document.getElementById("logoUpload").addEventListener("change",async function(e){
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=async function(ev){
+        try{
+          const trimmed = await trimLogoImage(ev.target.result);
+          logoDataURL = trimmed || ev.target.result;
+        } catch(_){
+          logoDataURL = ev.target.result;
+        }
+        logoIsCustom=true;
+        updateLogoPreview();
+        generatePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("resetLogoBtn").addEventListener("click",function(){
+      logoDataURL="MSD%20White.png";
+      logoIsCustom=false;
+      document.getElementById("logoUpload").value="";
+      updateLogoPreview();
+      generatePreview();
+    });
+
+    document.getElementById("rawUpload").addEventListener("change",async function(e){
+      const file=e.target.files[0]; if(!file) return;
+      try{
+        document.getElementById("rawStatus").textContent="Reading file...";
+        rawAgendaText=await loadRawAgendaFile(file);
+        if(/\.xlsx?$|\.xls$/i.test(file.name)){
+          document.getElementById("pipelineData").value = rawAgendaText || "";
+          document.getElementById("rawStatus").textContent="Excel agenda loaded and converted.";
+          document.getElementById("rawStatus").className="status";
+          generatePreview();
+        } else {
+          document.getElementById("rawStatus").textContent="File loaded. Click Convert Raw Agenda.";
+          document.getElementById("rawStatus").className="status";
+        }
+      } catch(err){
+        document.getElementById("rawStatus").textContent="Failed to read file.";
+        document.getElementById("rawStatus").className="status error";
+      }
+    });
+
+    document.getElementById("convertBtn").addEventListener("click",function(){
+      if(rawAgendaText) setRawAgendaAndConvert(rawAgendaText);
+      else{ document.getElementById("rawStatus").textContent="Please upload a raw agenda file first."; document.getElementById("rawStatus").className="status error"; }
+    });
+
+    document.getElementById("autoBtn").addEventListener("click",async function(){
+      const file=document.getElementById("rawUpload").files[0];
+      if(!file){ document.getElementById("rawStatus").textContent="Please upload a raw agenda file first."; document.getElementById("rawStatus").className="status error"; return; }
+      try{ const raw=await loadRawAgendaFile(file); setRawAgendaAndConvert(raw); }
+      catch(err){ document.getElementById("rawStatus").textContent="Could not auto-convert raw agenda."; document.getElementById("rawStatus").className="status error"; }
+    });
+
+    document.getElementById("logoAlign").addEventListener("change", generatePreview);
+
+    bindLogoSlider("logoWidth","logoWidthVal");
+    bindLogoSlider("footerLogoWidth","footerLogoWidthVal");
+
+    bindSlider("heroBoxTitleSize","--hero-box-title-size");
+    bindSlider("bodyTitleSize","--body-title-size");
+    bindSlider("introSize","--intro-size");
+    bindSlider("metaSize","--meta-size");
+    bindSlider("agendaTitleSize","--agenda-title-size");
+    bindSlider("agendaHeadSize","--agenda-head-size");
+    bindSlider("agendaCellSize","--agenda-cell-size");
+    bindSlider("speakerSize","--speaker-size");
+    bindSlider("speakerSmallSize","--speaker-small-size");
+    bindSlider("footerSize","--footer-size");
+    bindSlider("copyrightSize","--copyright-size");
+
+    bindHexControl("tealColor","tealPicker","tealPreview","#2b948d","--teal");
+    bindHexControl("navyColor","navyPicker","navyPreview","#343d53","--navy");
+    bindHexControl("footerColor","footerPicker","footerPreview","#1e7f78","--footer-text");
+    bindHexControl("bgColor","bgPicker","bgPreview","#ffffff","--bg");
+
+    bindHexControl("heroTitleColor","heroTitlePicker","heroTitleColorPreview","#ffffff","--hero-title-color");
+    bindHexControl("bodyTitleColor","bodyTitlePicker","bodyTitleColorPreview","#2b948d","--body-title-color");
+    bindHexControl("introColor","introPicker","introColorPreview","#2b948d","--intro-color");
+    bindHexControl("metaColor","metaPicker","metaColorPreview","#2b948d","--meta-color");
+    bindHexControl("agendaTitleColor","agendaTitlePicker","agendaTitleColorPreview","#2b948d","--agenda-title-color");
+    bindHexControl("agendaHeadColor","agendaHeadPicker","agendaHeadColorPreview","#ffffff","--agenda-head-color");
+    bindHexControl("agendaCellColor","agendaCellPicker","agendaCellColorPreview","#ffffff","--agenda-cell-color");
+    bindHexControl("speakerColor","speakerPicker","speakerColorPreview","#ffffff","--speaker-color");
+    bindHexControl("speakerSmallColor","speakerSmallPicker","speakerSmallColorPreview","#ffffff","--speaker-small-color");
+    bindHexControl("footerTextColor","footerTextPicker","footerTextColorPreview","#1e7f78","--footer-color");
+    bindHexControl("copyrightColor","copyrightPicker","copyrightColorPreview","#ffffff","--copyright-color");
+
+    ["title","intro","date","day","time","venue","inviteLink","jobCode","expiryDate","pipelineData"]
+      .forEach(id=>document.getElementById(id).addEventListener("input",generatePreview));
+
+    updateLogoPreview();
+    generatePreview();
+  }
+
+  document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
