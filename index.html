@@ -1280,19 +1280,42 @@
   async function downloadPDF(){
     try{
       const data=getData();
-      const element=document.querySelector(".preview");
-      if(!element || !element.innerHTML.trim()){
+      const previewEl = document.getElementById("preview") || document.querySelector(".preview .page");
+      if(!previewEl || !previewEl.innerHTML.trim()){
         alert("Please generate a preview first.");
         return;
       }
+
+      // Clone the preview into an offscreen container with fixed 600px width
+      const cloneWrap = document.createElement('div');
+      cloneWrap.style.position = 'fixed';
+      cloneWrap.style.left = '-9999px';
+      cloneWrap.style.top = '0';
+      cloneWrap.style.width = '600px';
+      cloneWrap.style.boxSizing = 'border-box';
+      cloneWrap.style.background = '#ffffff';
+      // Ensure fonts/styles carry over: copy the inner HTML of preview which already contains inline styles
+      cloneWrap.innerHTML = previewEl.outerHTML;
+      document.body.appendChild(cloneWrap);
+
+      // Measure size
+      const widthPx = 600;
+      const heightPx = cloneWrap.scrollHeight || cloneWrap.offsetHeight || 1000;
+      const pxToMm = px => px * 0.264583;
+      const widthMm = Math.ceil(pxToMm(widthPx));
+      const heightMm = Math.ceil(pxToMm(heightPx));
+
       const opt={
-        margin:10,
+        margin:0,
         filename:'emailer-agenda.pdf',
         image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2,backgroundColor:'#ffffff'},
-        jsPDF:{orientation:'portrait',unit:'mm',format:'a4'}
+        html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+        jsPDF:{unit:'mm',format:[widthMm,heightMm]}
       };
-      html2pdf().set(opt).from(element).save();
+
+      await html2pdf().set(opt).from(cloneWrap).save();
+      // cleanup
+      setTimeout(()=>{ try{ document.body.removeChild(cloneWrap); }catch(e){} },500);
     } catch(e){ alert("PDF download failed: "+e.message); }
   }
 
