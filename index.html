@@ -825,6 +825,7 @@
         </div>
         <div class="btn-row-2">
           <button onclick="downloadPDF()" style="background:#d65a5a;">Download PDF</button>
+          <button onclick="downloadEditable()" class="secondary" style="background:#3b82f6;">Download editable (DOC)</button>
         </div>
       </div>
 
@@ -1317,6 +1318,20 @@
       // cleanup
       setTimeout(()=>{ try{ document.body.removeChild(cloneWrap); }catch(e){} },500);
     } catch(e){ alert("PDF download failed: "+e.message); }
+  }
+
+  async function downloadEditable(){
+    try{
+      const data=getData();
+      const html = buildFullHTML(data);
+      const blob = new Blob([html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'emailer-agenda.doc';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(e){ alert('Download failed: '+e.message); }
   }
 
   async function copyHTML(){
