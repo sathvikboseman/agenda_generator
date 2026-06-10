@@ -288,10 +288,31 @@
       display:block;
     }
 
-    .logo-preview-wrap span{
+    .logo-preview-wrap span,
+    .banner-preview-wrap span{
       font-size:12px;
       color:rgba(255,255,255,0.7);
       font-style:italic;
+    }
+
+    .banner-preview-wrap{
+      margin-top:10px;
+      background:#f3f7f6;
+      border-radius:10px;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:52px;
+      overflow:hidden;
+    }
+
+    .banner-preview-wrap img{
+      max-width:100%;
+      max-height:80px;
+      object-fit:cover;
+      display:block;
+      border-radius:8px;
     }
 
     .preview{
@@ -312,9 +333,30 @@
     }
 
     .hero{
+      position:relative;
       background:var(--teal);
       color:#fff;
       padding:16px 16px 22px;
+      overflow:hidden;
+      --hero-overlay-opacity:1;
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:rgba(43,148,141,var(--hero-overlay-opacity));
+      pointer-events:none;
+      z-index:1;
+    }
+
+    .hero-inner{
+      position:relative;
+      z-index:2;
+    }
+
+    .hero-title-wrap{
+      padding:18px 0 0;
     }
 
     .logo-strip{
@@ -465,6 +507,8 @@
 
     .legal{width:86%;margin:5px auto 0;color:var(--footer-color);font-size:var(--footer-size);line-height:1.12;text-align:center}
     .privacy-link{text-align:center;color:var(--footer-color);font-weight:700;font-size:9px;margin:7px 0 7px}
+    .unsubscribe{width:90%;margin:14px auto 0;text-align:center}
+    .unsubscribe a{color:#ffffff;background:rgba(0,0,0,0.12);padding:8px 14px;border-radius:10px;display:inline-block;text-decoration:none;font-weight:700}
 
     .bottom-band{background:var(--teal);color:#fff;padding:7px 10px;display:flex;align-items:center;gap:8px}
     .bottom-logo{height:auto;display:block;flex:0 0 auto;margin-top:0}
@@ -493,6 +537,13 @@
         <div class="two-col">
           <div><label for="time">Time</label><input id="time" value="8:30am (UTC+4)" /></div>
           <div><label for="venue">Venue</label><input id="venue" value="Radisson Blu Hotel Sohar" /></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <label for="timezoneCountry">Time zone country</label>
+            <input id="timezoneCountry" value="Oman" placeholder="Oman, Kuwait, UAE, Bahrain, Qatar" />
+          </div>
+          <div style="padding-top:24px; font-size:12px; color:#666;">This updates the timing note below.</div>
         </div>
         <label for="inviteLink">Invite Link</label>
         <input id="inviteLink" type="text" value="https://example.com" placeholder="Paste invite URL here" />
@@ -535,6 +586,25 @@
         </div>
         <div class="btn-row-2" style="margin-top:4px;">
           <button class="ghost" id="resetLogoBtn">Reset to Default</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Header Banner</div>
+        <label for="bannerUpload">Upload banner image</label>
+        <input id="bannerUpload" type="file" accept="image/png,image/jpeg,image/webp" />
+        <div class="banner-preview-wrap" id="bannerPreviewWrap">
+          <span>No banner uploaded</span>
+        </div>
+        <div class="btn-row-2" style="margin-top:10px; gap:10px; display:flex; flex-wrap:wrap;">
+          <button class="ghost" id="resetBannerBtn">Remove banner</button>
+        </div>
+        <div class="slider-row" style="margin-top:10px;">
+          <div class="slider-top">
+            <label for="bannerOpacity">Banner overlay opacity</label>
+            <span class="slider-value" id="bannerOpacityVal">65%</span>
+          </div>
+          <input id="bannerOpacity" type="range" min="0" max="100" value="65" />
         </div>
       </div>
 
@@ -728,6 +798,20 @@
       </div>
 
       <div class="group">
+        <div class="group-title">Unsubscribe Link Type</div>
+        <div class="format-box">
+          <strong>Select one or more unsubscribe link types.</strong>
+          <div style="margin-top:10px;display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:8px;">
+            <label><input type="checkbox" name="unsubscribeType" value="SFMC" checked /> SFMC</label>
+            <label><input type="checkbox" name="unsubscribeType" value="UAE" /> UAE</label>
+            <label><input type="checkbox" name="unsubscribeType" value="Oman" /> Oman</label>
+            <label><input type="checkbox" name="unsubscribeType" value="Kuwait" /> Kuwait</label>
+            <label><input type="checkbox" name="unsubscribeType" value="Bahrain" /> Bahrain</label>
+            <label><input type="checkbox" name="unsubscribeType" value="Qatar" /> Qatar</label>
+          </div>
+        </div>
+      </div>
+      <div class="group">
         <div class="group-title">Output</div>
         <div class="format-box">
           <strong>Expected format:</strong>
@@ -753,7 +837,17 @@
 <script>
   let rawAgendaText = "";
   let logoDataURL = "MSD%20White.png";
+  let bannerDataURL = "";
   let logoIsCustom = false;
+
+  const unsubscribeLinks = {
+    SFMC: "https://connect.msdgcc.com/communication-preferences/?imtoken=%%token%%",
+    UAE: "{{unsubscribe_product_link[,AE]}}",
+    Oman: "{{unsubscribe_product_link[,BH]}}",
+    Kuwait: "{{unsubscribe_product_link[,KW]}}",
+    Bahrain: "{{unsubscribe_product_link[,BH]}}",
+    Qatar: "{{unsubscribe_product_link[,QA]}}"
+  };
 
   function esc(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
   function isValidHex(h){ return /^#[0-9A-Fa-f]{6}$/.test(String(h||"").trim()); }
@@ -770,6 +864,20 @@
     } else {
       const span=document.createElement("span");
       span.textContent="No logo uploaded — using default";
+      wrap.appendChild(span);
+    }
+  }
+
+  function updateBannerPreview(){
+    const wrap=document.getElementById("bannerPreviewWrap");
+    wrap.innerHTML="";
+    if(bannerDataURL){
+      const img=document.createElement("img");
+      img.src=bannerDataURL; img.alt="Banner preview";
+      wrap.appendChild(img);
+    } else {
+      const span=document.createElement("span");
+      span.textContent="No banner uploaded";
       wrap.appendChild(span);
     }
   }
@@ -858,14 +966,18 @@
     document.documentElement.style.setProperty(cssVar,fallback);
   }
 
-  function bindSlider(id,cssVar){
+  function bindSlider(id,cssVar,unit="px",formatter){
     const el=document.getElementById(id);
     const vl=document.getElementById(id+"Val");
     if(!el){ console.warn("Missing slider:",id); return; }
     function update(){
-      const v=el.value+"px";
-      document.documentElement.style.setProperty(cssVar,v);
-      if(vl) vl.textContent=v;
+      const value=el.value;
+      const cssValue=formatter?formatter(value):(value+unit);
+      document.documentElement.style.setProperty(cssVar,cssValue);
+      if(vl){
+        if(unit === "") vl.textContent = formatter ? `${value}%` : value;
+        else vl.textContent = value + unit;
+      }
       generatePreview();
     }
     el.addEventListener("input",update);
@@ -967,6 +1079,10 @@
   function gs(id,def){ const el=document.getElementById(id); return el?el.value+"px":def; }
   function gn(id,def){ const el=document.getElementById(id); return el?parseInt(el.value):def; }
 
+  function getSelectedUnsubscribeTypes(){
+    return [...document.querySelectorAll('input[name="unsubscribeType"]:checked')].map(el=>el.value);
+  }
+
   function getData(){
     const teal=normalizeHex(gv("tealColor"),"#2b948d");
     const navy=normalizeHex(gv("navyColor"),"#343d53");
@@ -976,13 +1092,17 @@
     return {
       title:gv("title"),intro:gv("intro"),date:gv("date"),day:gv("day"),
       time:gv("time"),venue:gv("venue"),inviteLink:gv("inviteLink"),
+      timeZoneCountry:gv("timezoneCountry") || "Oman",
       jobCode:gv("jobCode"),expiryDate:gv("expiryDate"),
       logoAlign,
       teal,navy,footerColor,bgColor,
       logoSrc:logoDataURL,
+      bannerSrc:bannerDataURL,
       logoWidth:gn("logoWidth",110),
       footerLogoWidth:gn("footerLogoWidth",76),
+      bannerOpacity:Math.max(0,Math.min(1,(parseInt(gv("bannerOpacity"),10)||65)/100)),
       agenda:parseAgenda(gv("pipelineData")),
+      unsubscribeTypes:getSelectedUnsubscribeTypes(),
       heroBoxTitleSize:gs("heroBoxTitleSize","24px"),
       bodyTitleSize:gs("bodyTitleSize","24px"),
       introSize:gs("introSize","13px"),
@@ -1023,15 +1143,31 @@
     const jobCode=data.jobCode||"OM-GSL-00057";
     const expiryDate=data.expiryDate||"01-06-2026";
     const logoAlignClass = data.logoAlign === "left" ? "left" : data.logoAlign === "right" ? "right" : "center";
+    const heroStyle = data.bannerSrc ? `background-image:url('${data.bannerSrc}');background-size:cover;background-position:center;` : "";
+    const overlayOpacity = data.bannerSrc ? data.bannerOpacity : 1;
+    const heroStyleAttr = data.bannerSrc ? `${heroStyle} --hero-overlay-opacity:${overlayOpacity};` : "";
+    const timingTextMap = {
+      "Oman": "Oman local time (UTC+4)",
+      "Kuwait": "Kuwait local time (UTC+3)",
+      "UAE": "UAE local time (UTC+4)",
+      "Bahrain": "Bahrain local time (UTC+3)",
+      "Qatar": "Qatar local time (UTC+3)"
+    };
+    const timingNoteText = timingTextMap[data.timeZoneCountry] || `${data.timeZoneCountry} local time`;
+    const unsubscribeTypes = Array.isArray(data.unsubscribeTypes) && data.unsubscribeTypes.length ? data.unsubscribeTypes : ["SFMC"];
+    const primaryType = unsubscribeTypes[0];
+    const unsubscribeLink = unsubscribeLinks[primaryType] || unsubscribeLinks.SFMC;
     return `
-      <div class="hero">
-        <div class="logo-strip">
-          <div class="logo-row ${logoAlignClass}">
-            <img class="msd-logo" src="${logoSrc}" alt="Logo" style="width:${logoW}px;" />
+      <div class="hero"${heroStyleAttr ? ` style="${heroStyleAttr}"` : ""}>
+        <div class="hero-inner">
+          <div class="logo-strip">
+            <div class="logo-row ${logoAlignClass}">
+              <img class="msd-logo" src="${logoSrc}" alt="Logo" style="width:${logoW}px;" />
+            </div>
           </div>
-        </div>
-        <div class="hero-title-wrap">
-          <h1>${esc(data.title)}</h1>
+          <div class="hero-title-wrap">
+            <h1>${esc(data.title)}</h1>
+          </div>
         </div>
       </div>
       <div class="content">
@@ -1045,14 +1181,14 @@
         <div class="register-note">For online attendance, please register here:</div>${topBtn}
         <div class="agenda-title">AGENDA</div><div class="rule"></div>
         <table class="agenda"><thead><tr><th style="width:27%">Time</th><th style="width:38%">Topic</th><th style="width:35%">Speaker</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="timing-note">*All timings are based on Oman local time (UTC+4)</div><div class="rule2"></div>
+        <div class="timing-note">*All timings are based on ${esc(timingNoteText)}</div><div class="rule2"></div>
         <div class="footer-register">For online attendance, please register here:</div>${botBtn}<br>
         <div class="contact">For Adverse Event, Product Quality or Medical Inquiry Contact<br><strong>DPOC.GULF@MSD.COM</strong></div>
         <div class="legal">MSD is a signatory of the Middle East &amp; Africa code of pharmaceutical marketing practices which commits to sponsoring physicians only to scientific events, this invitation can't be extended to spouses or guests</div>
         <div class="legal">*Your Privacy: By accepting this meeting request and/or joining this meeting, you consent to MSD processing your personal information for the purpose of organizing and holding this meeting in accordance with its HCP Privacy Notice, which is available at www.msdprivacy.com.</div>
         <div class="legal">To know more about how we process your personal information, and to exercise your right to access, amend, correct or delete your Personal Information and withdraw your consent, please visit www.msdprivacy.com.</div>
         <div class="legal">This email is only intended for the named recipient. Do not share or forward this email or any information or links included within.</div>
-        <div class="legal">You received this email because you have chosen to receive communications from MSD through registration with our services. If you no longer wish to receive any further emails from MSD, you can unsubscribe by clicking this link: <u>Unsubscribe here.</u></div>
+        <div class="legal">You received this email because you have chosen to receive communications from MSD through registration with our services. If you no longer wish to receive any further emails from MSD, you can unsubscribe by clicking this link: <u><a href="${unsubscribeLink}" style="color:inherit;text-decoration:underline">Unsubscribe here</a></u>.</div>
         <div class="privacy-link">Privacy Policy</div>
       </div>
       <div class="bottom-band"><img class="bottom-logo" src="${logoSrc}" alt="Logo" style="width:${footerLogoW}px;" /><div class="bottom-text"><span class="copyright-line">Copyright &copy; 2026 Merck &amp; Co., Inc., Rahway, NJ, USA and its affiliates. All rights reserved. ${esc(jobCode)} EXPIRY DATE: ${esc(expiryDate)}</span><br>To report an adverse event, product quality complaint and other reportable information or if you have a medical inquiry, you can contact: Tel: +97144269100 Fax: +97144269204 Email: DPOC.GULF@MSD.COM</div></div>
@@ -1105,18 +1241,35 @@
     const footerLogoW=data.footerLogoWidth||76;
     const jobCode=data.jobCode||"OM-GSL-00057";
     const expiryDate=data.expiryDate||"01-06-2026";
-    const logoAlignClass = data.logoAlign === "left" ? "left" : data.logoAlign === "right" ? "right" : "center";
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${esc(data.title)}</title><style>*{box-sizing:border-box}body{margin:0;font-family:"Invention",Arial,sans-serif;background:${data.bgColor};color:#1f4f4b}.page{width:600px;margin:0 auto;background:${data.bgColor};overflow:hidden}.hero{background:${data.teal};color:#fff;padding:16px 16px 22px}.logo-strip{margin:0 -16px;padding:0 16px;width:calc(100% + 32px)}.logo-row{display:flex;align-items:center;margin:0;padding:0;width:100%}.logo-row.left{justify-content:flex-start}.logo-row.center{justify-content:center}.logo-row.right{justify-content:flex-end}.msd-logo{display:block;width:${logoW}px;height:auto;object-fit:contain}.hero-title-wrap{padding:18px 0 0}.hero-title-wrap h1{margin:0;font-size:${data.heroBoxTitleSize};line-height:1.12;font-weight:700;width:95%;letter-spacing:-0.1px;color:${data.heroTitleColor}}.content{padding:12px 16px 0}.intro{color:${data.introColor};font-size:${data.introSize};line-height:1.12;margin-bottom:8px}.intro .indent{display:block;padding-left:10px;font-size:${data.introSize};margin-top:1px;color:${data.introColor}}.title-center{text-align:center;color:${data.bodyTitleColor};font-size:${data.bodyTitleSize};line-height:1.06;font-weight:700;margin:6px auto 12px;max-width:540px}.meta-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 4px 4px}.meta-item{flex:1;display:flex;align-items:center;gap:7px;color:${data.metaColor};font-size:${data.metaSize};line-height:1.1;min-height:40px}.icon{width:27px;height:27px;flex:0 0 27px;stroke:${data.metaColor};fill:none;stroke-width:2.2;margin-top:0}.meta-text{padding-top:0;text-align:center}.register-note{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:3px 0 5px}.btn-link,.btn2{display:block;width:170px;margin:0 auto;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.agenda-title{text-align:center;color:${data.agendaTitleColor};font-size:${data.agendaTitleSize};font-weight:700;margin:10px 0 5px;letter-spacing:0.2px}.rule,.rule2{width:82%;height:3px;background:${data.teal};margin:0 auto 10px}.agenda{width:88%;margin:0 auto;border-collapse:separate;border-spacing:2px;table-layout:fixed}.agenda thead th{background:${data.navy};color:${data.agendaHeadColor};font-size:${data.agendaHeadSize};line-height:1;padding:4px 5px;font-weight:700;text-align:center}.agenda td{background:${data.teal};color:${data.agendaCellColor};text-align:center;padding:7px 6px;font-size:${data.agendaCellSize};line-height:1.12;vertical-align:middle;height:52px}.agenda td.topic{background:${data.navy};font-size:${data.agendaCellSize};font-weight:700}.agenda td.speaker{text-align:left;padding:6px;font-size:${data.speakerSize};line-height:1.05;font-weight:700;color:${data.speakerColor}}.agenda td.speaker small{display:block;font-size:${data.speakerSmallSize};font-weight:400;line-height:1.04;margin-top:1px;color:${data.speakerSmallColor}}.timing-note{text-align:center;color:${data.teal};font-size:8px;margin:5px 0 4px}.footer-register{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:1px 0 5px}.btn2{display:block;width:170px;margin:0 auto 6px;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.contact{width:90%;margin:0 auto 5px;background:${data.teal};color:#fff;border-radius:10px;text-align:center;padding:7px 10px;font-size:9px;line-height:1.1}.legal{width:86%;margin:5px auto 0;color:${data.footerTextColor};font-size:${data.footerSize};line-height:1.12;text-align:center}.privacy-link{text-align:center;color:${data.footerTextColor};font-weight:700;font-size:9px;margin:7px 0 7px}.bottom-band{background:${data.teal};color:#fff;padding:7px 10px;display:flex;align-items:flex-start;gap:8px}.bottom-logo{width:${footerLogoW}px;height:auto;display:block;flex:0 0 auto;margin-top:1px}.bottom-text{font-size:${data.copyrightSize};line-height:1.08;flex:1;padding-top:1px}.copyright-line{font-size:${data.copyrightSize};color:${data.copyrightColor}}</style></head><body><div class="page">${buildInnerHTML(data)}</div></body></html>`;
+    const heroStyle = data.bannerSrc ? `background-image:url('${data.bannerSrc}');background-size:cover;background-position:center;` : "";
+    const overlayOpacity = data.bannerSrc ? data.bannerOpacity : 1;
+    const unsubscribeTypes = Array.isArray(data.unsubscribeTypes) && data.unsubscribeTypes.length ? data.unsubscribeTypes : ["SFMC"];
+    const primaryType = unsubscribeTypes[0];
+    const unsubscribeLink = unsubscribeLinks[primaryType] || unsubscribeLinks.SFMC;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${esc(data.title)}</title><style>*{box-sizing:border-box}body{margin:0;font-family:"Invention",Arial,sans-serif;background:${data.bgColor};color:#1f4f4b}.page{width:600px;margin:0 auto;background:${data.bgColor};overflow:hidden}.hero{position:relative;background:${data.teal};color:#fff;padding:16px 16px 22px;overflow:hidden;--hero-overlay-opacity:1;${heroStyle}}.hero::before{content:"";position:absolute;inset:0;background:rgba(43,148,141,var(--hero-overlay-opacity));pointer-events:none;z-index:1}.hero-inner{position:relative;z-index:2}.logo-strip{margin:0 -16px;padding:0 16px;width:calc(100% + 32px)}.logo-row{display:flex;align-items:center;margin:0;padding:0;width:100%}.logo-row.left{justify-content:flex-start}.logo-row.center{justify-content:center}.logo-row.right{justify-content:flex-end}.msd-logo{display:block;width:${logoW}px;height:auto;object-fit:contain}.hero-title-wrap{padding:18px 0 0}.hero-title-wrap h1{margin:0;font-size:${data.heroBoxTitleSize};line-height:1.12;font-weight:700;width:95%;letter-spacing:-0.1px;color:${data.heroTitleColor}}.content{padding:12px 16px 0}.intro{color:${data.introColor};font-size:${data.introSize};line-height:1.12;margin-bottom:8px}.intro .indent{display:block;padding-left:10px;font-size:${data.introSize};margin-top:1px;color:${data.introColor}}.title-center{text-align:center;color:${data.bodyTitleColor};font-size:${data.bodyTitleSize};line-height:1.06;font-weight:700;margin:6px auto 12px;max-width:540px}.meta-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 4px 4px}.meta-item{flex:1;display:flex;align-items:center;gap:7px;color:${data.metaColor};font-size:${data.metaSize};line-height:1.1;min-height:40px}.icon{width:27px;height:27px;flex:0 0 27px;stroke:${data.metaColor};fill:none;stroke-width:2.2;margin-top:0}.meta-text{padding-top:0;text-align:center}.register-note{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:3px 0 5px}.btn-link,.btn2{display:block;width:170px;margin:0 auto;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.agenda-title{text-align:center;color:${data.agendaTitleColor};font-size:${data.agendaTitleSize};font-weight:700;margin:10px 0 5px;letter-spacing:0.2px}.rule,.rule2{width:82%;height:3px;background:${data.teal};margin:0 auto 10px}.agenda{width:88%;margin:0 auto;border-collapse:separate;border-spacing:2px;table-layout:fixed}.agenda thead th{background:${data.navy};color:${data.agendaHeadColor};font-size:${data.agendaHeadSize};line-height:1;padding:4px 5px;font-weight:700;text-align:center}.agenda td{background:${data.teal};color:${data.agendaCellColor};text-align:center;padding:7px 6px;font-size:${data.agendaCellSize};line-height:1.12;vertical-align:middle;height:52px}.agenda td.topic{background:${data.navy};font-size:${data.agendaCellSize};font-weight:700}.agenda td.speaker{text-align:left;padding:6px;font-size:${data.speakerSize};line-height:1.05;font-weight:700;color:${data.speakerColor}}.agenda td.speaker small{display:block;font-size:${data.speakerSmallSize};font-weight:400;line-height:1.04;margin-top:1px;color:${data.speakerSmallColor}}.timing-note{text-align:center;color:${data.teal};font-size:8px;margin:5px 0 4px}.footer-register{text-align:center;color:${data.teal};font-size:11px;font-weight:700;margin:1px 0 5px}.btn2{display:block;width:170px;margin:0 auto 6px;background:${data.teal};color:#fff;text-align:center;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:700;line-height:1;text-decoration:none}.contact{width:90%;margin:0 auto 5px;background:${data.teal};color:#fff;border-radius:10px;text-align:center;padding:7px 10px;font-size:9px;line-height:1.1}.legal{width:86%;margin:5px auto 0;color:${data.footerTextColor};font-size:${data.footerSize};line-height:1.12;text-align:center}.privacy-link{text-align:center;color:${data.footerTextColor};font-weight:700;font-size:9px;margin:7px 0 7px}.bottom-band{background:${data.teal};color:#fff;padding:7px 10px;display:flex;align-items:center;gap:8px}.bottom-logo{width:${footerLogoW}px;height:auto;display:block;flex:0 0 auto;margin-top:0}.bottom-text{font-size:${data.copyrightSize};line-height:1.08;flex:1}.copyright-line{font-size:${data.copyrightSize};color:${data.copyrightColor}}</style></head><body><div class="page">${buildInnerHTML(data)}</div></body></html>`;
   }
 
   function downloadHTML(){
     try{
       const data=getData();
-      const blob=new Blob([buildFullHTML(data)],{type:"text/html"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download="emailer-template.html"; a.click();
-      URL.revokeObjectURL(url);
+      const selected = Array.isArray(data.unsubscribeTypes) && data.unsubscribeTypes.length ? data.unsubscribeTypes : ["SFMC"];
+      if(selected.length <= 1){
+        const blob=new Blob([buildFullHTML(data)],{type:"text/html"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url; a.download="emailer-template.html"; a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+      selected.forEach(type=>{
+        const fileData={...data, unsubscribeTypes:[type]};
+        const blob=new Blob([buildFullHTML(fileData)],{type:"text/html"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url; a.download=`emailer-template-${type}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
     } catch(e){ alert("Download failed: "+e.message); }
   }
 
@@ -1293,6 +1446,24 @@
       generatePreview();
     });
 
+    document.getElementById("bannerUpload").addEventListener("change",async function(e){
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        bannerDataURL = ev.target.result;
+        updateBannerPreview();
+        generatePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("resetBannerBtn").addEventListener("click",function(){
+      bannerDataURL = "";
+      document.getElementById("bannerUpload").value = "";
+      updateBannerPreview();
+      generatePreview();
+    });
+
     document.getElementById("rawUpload").addEventListener("change",async function(e){
       const file=e.target.files[0]; if(!file) return;
       try{
@@ -1329,6 +1500,7 @@
 
     bindLogoSlider("logoWidth","logoWidthVal");
     bindLogoSlider("footerLogoWidth","footerLogoWidthVal");
+    bindSlider("bannerOpacity","--hero-overlay-opacity","",value=>String(Number(value)/100));
 
     bindSlider("heroBoxTitleSize","--hero-box-title-size");
     bindSlider("bodyTitleSize","--body-title-size");
@@ -1362,7 +1534,10 @@
     ["title","intro","date","day","time","venue","inviteLink","jobCode","expiryDate","pipelineData"]
       .forEach(id=>document.getElementById(id).addEventListener("input",generatePreview));
 
+    document.querySelectorAll('input[name="unsubscribeType"]').forEach(el=>el.addEventListener("change",generatePreview));
+
     updateLogoPreview();
+    updateBannerPreview();
     generatePreview();
   }
 
